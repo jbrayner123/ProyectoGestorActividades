@@ -13,6 +13,7 @@ class User(Base):
 
     tasks = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")  # NUEVA LÍNEA
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -25,12 +26,14 @@ class Task(Base):
     status = Column(String(20), default="pending", nullable=False)
     important = Column(Boolean, default=False, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)  # NUEVA LÍNEA
     created_at = Column(DateTime(timezone=False), server_default=func.now())
     updated_at = Column(DateTime(timezone=False), onupdate=func.now(), server_default=func.now())
     completed_at = Column(DateTime(timezone=False), nullable=True)
     is_completed = Column(Boolean, default=False, nullable=False)
 
     owner = relationship("User", back_populates="tasks")
+    category = relationship("Category", back_populates="tasks")  # NUEVA LÍNEA
     notifications = relationship("Notification", back_populates="task", cascade="all, delete-orphan")
 
 class Notification(Base):
@@ -44,3 +47,16 @@ class Notification(Base):
 
     task = relationship("Task", back_populates="notifications")
     user = relationship("User", back_populates="notifications")
+
+# NUEVA CLASE COMPLETA
+class Category(Base):
+    __tablename__ = "categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    color = Column(String(7), default="#3B82F6", nullable=False)  # Color en formato hexadecimal
+    icon = Column(String(50), default="📁", nullable=False)  # Emoji o nombre de ícono
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=False), server_default=func.now())
+
+    user = relationship("User", back_populates="categories")
+    tasks = relationship("Task", back_populates="category")

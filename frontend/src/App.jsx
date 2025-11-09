@@ -9,6 +9,7 @@ import Register from "./components/Register";
 import UserProfile from "./components/UserProfile";
 import NotificationBell from "./components/NotificationBell";
 import NotificationList from "./components/NotificationList";
+import CategoryList from "./components/CategoryList";  // NUEVA LÍNEA
 
 export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -139,6 +140,7 @@ export default function App() {
       <nav style={{ marginBottom: 20, textAlign: "center" }}>
         <Link to="/" style={{ marginRight: 15 }}>📋 Ver Tareas</Link>
         <Link to="/crear" style={{ marginRight: 15 }}>➕ Crear Tarea</Link>
+        <Link to="/categories" style={{ marginRight: 15 }}>🏷️ Categorías</Link>  {/* NUEVA LÍNEA */}
         <Link to="/notifications">📬 Notificaciones</Link>
       </nav>
 
@@ -151,6 +153,10 @@ export default function App() {
         <Route
           path="/crear"
           element={<TaskForm onCreated={handleCreated} showNotification={showNotification} />}
+        />
+                <Route
+          path="/categories"
+          element={<CategoryList showNotification={showNotification} refreshKey={refreshKey} />}  
         />
         <Route
           path="/profile"

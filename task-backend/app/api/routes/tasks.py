@@ -40,6 +40,7 @@ def list_tasks(
     q: Optional[str] = Query(None),
     status: Optional[schemas.TaskStatus] = Query(None),
     important: Optional[bool] = Query(None),
+    category_id: Optional[int] = Query(None),  # ✅ AGREGADO
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(10, ge=1, le=100, description="Elementos por página"),
     sort: Optional[str] = Query("created_at:desc", description="Ordenar por campo:dirección (ej: 'title:asc', 'priority:desc')"),
@@ -67,7 +68,12 @@ def list_tasks(
     
     if important is not None:
         query = query.filter(models.Task.important == important)
+    
+    # ✅ NUEVO: Filtro por categoría
+    if category_id is not None:
+        query = query.filter(models.Task.category_id == category_id)
 
+    # Resto del código permanece igual...
     # Usar cola de prioridad para ordenamiento
     if use_priority_queue:
         all_tasks = query.all()
@@ -202,6 +208,7 @@ def create_task(
         status=status_value,
         important=bool(obj.get("important")),
         user_id=current_user.id,
+        category_id=obj.get("category_id"), 
         created_at=now,
         updated_at=now,
         completed_at=completed_at_value,
@@ -264,7 +271,7 @@ def update_task(
     if "due_time" in data: t.due_time = data["due_time"]
     if "priority" in data: t.priority = data["priority"]
     if "important" in data: t.important = data["important"]
-    
+    if "category_id" in data: t.category_id = data["category_id"]
     # Manejar is_completed y status de forma sincronizada
     if "is_completed" in data:
         t.is_completed = data["is_completed"]

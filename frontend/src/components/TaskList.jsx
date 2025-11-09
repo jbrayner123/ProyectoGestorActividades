@@ -1,6 +1,48 @@
 import { useState, useEffect } from "react";
 import api from "../api";
 import ConfirmModal from "./ConfirmModal";
+import { categoriesService } from "../api/categoriesService";
+
+// Componente selector de categorías
+function CategorySelector({ value, onChange }) {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  async function loadCategories() {
+    try {
+      setLoading(true);
+      const data = await categoriesService.getAll();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error("Error al cargar categorías:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return <select disabled><option>Cargando categorías...</option></select>;
+  }
+
+  return (
+    <select
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : null)}
+      style={{ width: "100%", padding: "8px", fontSize: "14px" }}
+    >
+      <option value="">Sin categoría</option>
+      {categories.map((cat) => (
+        <option key={cat.id} value={cat.id}>
+          {cat.icon} {cat.name}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export default function TaskList({ refreshKey, showNotification }) {
   const [tasks, setTasks] = useState([]);
@@ -12,7 +54,8 @@ export default function TaskList({ refreshKey, showNotification }) {
   const [filters, setFilters] = useState({
     q: '',
     status: '',
-    important: ''
+    important: '',
+    category_id: ''
   });
   
   // Estados para paginación
@@ -28,6 +71,7 @@ export default function TaskList({ refreshKey, showNotification }) {
   // Estados para vistas especiales
   const [activeView, setActiveView] = useState('normal');
   const [specialTasks, setSpecialTasks] = useState([]);
+  const [activeCategory, setActiveCategory] = useState(null);
 
   // Modal state
   const [deleteId, setDeleteId] = useState(null);
@@ -88,6 +132,7 @@ export default function TaskList({ refreshKey, showNotification }) {
       const res = await api.get("/tareas-prioritarias?limit=10");
       setSpecialTasks(res.data);
       setActiveView('priority');
+      setActiveCategory(null);
     } catch (err) {
       showNotification?.(parseApiError(err) || "Error cargando tareas prioritarias", "error");
     } finally {
@@ -102,6 +147,7 @@ export default function TaskList({ refreshKey, showNotification }) {
       const res = await api.get("/tareas-proximas-vencer?limit=10&days_threshold=3");
       setSpecialTasks(res.data);
       setActiveView('upcoming');
+      setActiveCategory(null);
     } catch (err) {
       showNotification?.(parseApiError(err) || "Error cargando tareas próximas", "error");
     } finally {
@@ -113,12 +159,36 @@ export default function TaskList({ refreshKey, showNotification }) {
   const showNormalView = () => {
     setActiveView('normal');
     setSpecialTasks([]);
+    setActiveCategory(null);
     fetchTasks(1, pagination.limit, filters);
+  };
+
+  // Función para cargar información de la categoría
+  const loadCategoryInfo = async (categoryId) => {
+    try {
+      const res = await api.get(`/categories/${categoryId}`);
+      setActiveCategory(res.data);
+    } catch (err) {
+      console.error("Error cargando categoría:", err);
+      setActiveCategory(null);
+    }
   };
 
   useEffect(() => {
     if (activeView === 'normal') {
-      fetchTasks(1, 10, filters);
+      // Verificar si hay un parámetro category en la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryId = urlParams.get('category');
+      
+      if (categoryId) {
+        const newFilters = { ...filters, category_id: categoryId };
+        setFilters(newFilters);
+        fetchTasks(1, 10, newFilters);
+        loadCategoryInfo(categoryId);
+      } else {
+        setActiveCategory(null);
+        fetchTasks(1, 10, filters);
+      }
     }
   }, [refreshKey]);
 
@@ -156,10 +226,15 @@ export default function TaskList({ refreshKey, showNotification }) {
       const emptyFilters = {
         q: '',
         status: '',
-        important: ''
+        important: '',
+        category_id: ''
       };
       setFilters(emptyFilters);
+      setActiveCategory(null);
       fetchTasks(1, pagination.limit, emptyFilters);
+      
+      // Limpiar parámetro de la URL
+      window.history.pushState({}, '', window.location.pathname);
     }
   };
 
@@ -238,6 +313,26 @@ export default function TaskList({ refreshKey, showNotification }) {
 
   // Obtener título según la vista activa
   const getViewTitle = () => {
+    if (activeCategory) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{
+            backgroundColor: activeCategory.color,
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px'
+          }}>
+            {activeCategory.icon}
+          </span>
+          <span>{activeCategory.name} ({pagination.total} {pagination.total === 1 ? 'tarea' : 'tareas'})</span>
+        </div>
+      );
+    }
+    
     switch (activeView) {
       case 'priority':
         return '🚨 Tareas Prioritarias';
@@ -262,11 +357,15 @@ export default function TaskList({ refreshKey, showNotification }) {
         <button 
           onClick={() => {
             setActiveView('normal');
-            fetchTasks(1, pagination.limit, filters);
+            setActiveCategory(null);
+            const emptyFilters = { q: '', status: '', important: '', category_id: '' };
+            setFilters(emptyFilters);
+            fetchTasks(1, pagination.limit, emptyFilters);
+            window.history.pushState({}, '', window.location.pathname);
           }}
           style={{
             padding: '8px 16px',
-            backgroundColor: activeView === 'normal' ? '#007bff' : '#6c757d',
+            backgroundColor: activeView === 'normal' && !activeCategory ? '#007bff' : '#6c757d',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -275,6 +374,28 @@ export default function TaskList({ refreshKey, showNotification }) {
         >
           📋 Todas las Tareas
         </button>
+
+        {activeCategory && (
+          <button 
+            onClick={() => {
+              setActiveCategory(null);
+              const newFilters = { ...filters, category_id: '' };
+              setFilters(newFilters);
+              fetchTasks(1, pagination.limit, newFilters);
+              window.history.pushState({}, '', window.location.pathname);
+            }}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            ✖ Quitar filtro de categoría
+          </button>
+        )}
 
         <button 
           onClick={fetchPriorityTasks}
@@ -435,6 +556,18 @@ export default function TaskList({ refreshKey, showNotification }) {
                   value={editForm.description || ""}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                 />
+                
+                {/* Selector de categoría */}
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: "block", marginBottom: "4px", fontWeight: "bold", fontSize: "14px" }}>
+                    Categoría:
+                  </label>
+                  <CategorySelector 
+                    value={editForm.category_id || ""} 
+                    onChange={(categoryId) => setEditForm({ ...editForm, category_id: categoryId })}
+                  />
+                </div>
+
                 <div style={{ display: "flex", gap: "8px", marginTop: 8 }}>
                   <input
                     type="date"
@@ -513,14 +646,16 @@ export default function TaskList({ refreshKey, showNotification }) {
                       setEditingId(t.id);
                       setEditForm({ ...t });
                     }}
+                    title="Editar tarea"
                   >
-                    Editar
+                    ✏️
                   </button>
                   <button
                     className="btn-delete"
                     onClick={() => requestDelete(t.id, t.title)}
+                    title="Eliminar tarea"
                   >
-                    Eliminar
+                    🗑️
                   </button>
                 </div>
               </>

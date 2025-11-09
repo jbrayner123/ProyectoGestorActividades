@@ -24,6 +24,7 @@ class TaskCreate(BaseModel):
     important: bool = False
     user_id: Optional[int] = 1
     is_completed: bool = False
+    category_id: Optional[int] = None  # NUEVA LÍNEA
 
     @validator("due_date")
     def due_date_not_in_past(cls, v):
@@ -42,6 +43,7 @@ class TaskUpdate(BaseModel):
     important: Optional[bool] = None
     user_id: Optional[int] = None
     is_completed: Optional[bool] = None
+    category_id: Optional[int] = None  # NUEVA LÍNEA
 
     @validator("due_date")
     def due_date_not_in_past(cls, v):
@@ -60,6 +62,7 @@ class TaskOut(BaseModel):
     status: TaskStatus
     important: bool
     user_id: int
+    category_id: Optional[int] = None  # NUEVA LÍNEA
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None

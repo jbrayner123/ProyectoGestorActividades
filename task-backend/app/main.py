@@ -1,7 +1,7 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import tasks, auth, user, notifications  # agregar notifications
+from app.api.routes import tasks, auth, user, notifications, categories  # AGREGAR categories
 
 from app.core.database import engine, Base
 import os
@@ -25,7 +25,8 @@ app.add_middleware(
 app.include_router(tasks.router, prefix="", tags=["Tasks"])
 app.include_router(auth.router, prefix="", tags=["Auth"])
 app.include_router(user.router, prefix="", tags=["User"])
-app.include_router(notifications.router, prefix="", tags=["Notifications"])  # nueva línea
+app.include_router(notifications.router, prefix="", tags=["Notifications"])
+app.include_router(categories.router, prefix="", tags=["Categories"])  # NUEVA LÍNEA
 
 @app.on_event("startup")
 def on_startup():
