@@ -192,86 +192,106 @@ uvicorn app.main:app --reload
 
 **12\. Crear y ejecutar Base de datos en MySQL**
 
-CREATE DATABASE tasks_db;
-
-USE tasks_db;
+    CREATE DATABASE tasks_db;
+    
+    USE tasks_db;
 
 -- Tabla de usuarios
 
-CREATE TABLE users (
-
-    id INT(11) AUTO_INCREMENT PRIMARY KEY,
-
-    name VARCHAR(100) NOT NULL,
-
-    email VARCHAR(150) NOT NULL UNIQUE,
-
-    hashed_password VARCHAR(255) NOT NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-);
+    CREATE TABLE users (
+    
+      id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    
+      name VARCHAR(100) NOT NULL,
+    
+      email VARCHAR(150) NOT NULL UNIQUE,
+    
+      hashed_password VARCHAR(255) NOT NULL,
+    
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    
+    );
 
 -- Tabla de tareas
 
-CREATE TABLE tasks (
-
-    id INT(11) AUTO_INCREMENT PRIMARY KEY,
-
-    title VARCHAR(200) NOT NULL,
-
-    description VARCHAR(2000),
-
-    due_date DATE,
-
-    due_time TIME,
-
-    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-
-    status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
-
-    important TINYINT(1) DEFAULT 0,
-
-    user_id INT(11) NOT NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    completed_at TIMESTAMP NULL DEFAULT NULL,
-
-    is_completed TINYINT(1) DEFAULT 0,
-
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-
-);
+    CREATE TABLE tasks (
+    
+      id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    
+      title VARCHAR(200) NOT NULL,
+    
+      description VARCHAR(2000),
+    
+      due_date DATE,
+    
+      due_time TIME,
+    
+      priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    
+      status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    
+      important TINYINT(1) DEFAULT 0,
+    
+      user_id INT(11) NOT NULL,
+    
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+      completed_at TIMESTAMP NULL DEFAULT NULL,
+    
+      is_completed TINYINT(1) DEFAULT 0,
+    
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    
+    );
 
 -- Tabla de notificaciones
 
-CREATE TABLE notifications (
+    CREATE TABLE notifications (
+    
+      id INT(11) AUTO_INCREMENT PRIMARY KEY,
+      
+      task_id INT(11) NOT NULL,
+      
+      user_id INT(11) NOT NULL,
+      
+      message VARCHAR(255) NOT NULL,
+      
+      is_read TINYINT(1) DEFAULT 0,
+      
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    
+    );
 
-    id INT(11) AUTO_INCREMENT PRIMARY KEY,
+-- Tabla de categorias
 
-    task_id INT(11) NOT NULL,
+    CREATE TABLE categories (
+        id INT(11) AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        color VARCHAR(7) DEFAULT '#3B82F6' NOT NULL,
+        icon VARCHAR(50) DEFAULT '📁' NOT NULL,
+        user_id INT(11) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-    user_id INT(11) NOT NULL,
+-- Agregar columna category_id a la tabla tasks
 
-    message VARCHAR(255) NOT NULL,
-
-    is_read TINYINT(1) DEFAULT 0,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
-
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-
-);
+    ALTER TABLE tasks
+    ADD COLUMN category_id INT(11) NULL,
+    ADD FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
 
 -- *README generado para Entregable 2 con mucho esfuerzo y dedicación.*
 
 **13\. Ejecutar frontend**
 
-cd ./frontend
+```cd ./frontend```
 
-npm run dev
+```npm install``` Si es necesario
+
+```npm run dev```
